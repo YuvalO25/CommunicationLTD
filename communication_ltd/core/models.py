@@ -1,7 +1,8 @@
 from django.db import models
+from django.utils import timezone
 
 class Sector(models.Model):
-    user_type= models.CharField(max_length=100)
+    user_type = models.CharField(max_length=100)
 
     def __str__(self):
         return self.user_type
@@ -23,3 +24,27 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class UserAccount(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    salt = models.CharField(max_length=128)
+    password_hash = models.CharField(max_length=256)
+    login_attempts = models.PositiveIntegerField(default=0)
+    reset_token = models.CharField(max_length=128, null=True, blank=True)
+    reset_created_at = models.DateTimeField(null=True, blank=True)
+    sector = models.ForeignKey(Sector, null=True, blank=True, on_delete=models.SET_NULL)
+    package = models.ForeignKey(Package, null=True, blank=True, on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.username
+
+
+class PasswordHistory(models.Model):
+    user = models.ForeignKey(UserAccount, related_name="password_history", on_delete=models.CASCADE)
+    password_hash = models.CharField(max_length=256)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.created_at.isoformat()}"
