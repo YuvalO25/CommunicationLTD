@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Sector(models.Model):
     user_type= models.CharField(max_length=100)
@@ -23,3 +24,21 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    class PasswordHistory(models.Model):
+        user = models.ForeignKey(User, on_delete=models.CASCADE)
+        hashed_password = models.CharField(max_length=300)
+        changed_at = models.DateTimeField(auto_now_add=True)
+
+    def str(self):
+        return f"{self.user.username} - {self.changed_at}"
+    
+    password_hash = models.CharField(max_length=256)
+    password_salt = models.CharField(max_length=256)
+    password_history = models.JSONField(default=list)
+    login_attempts = models.IntegerField(default=0)
+
+    def str(self):
+        return self.username
+
+
+
