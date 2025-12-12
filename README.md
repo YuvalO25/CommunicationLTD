@@ -22,3 +22,7 @@ Configured in `communication_ltd/communication_ltd/config/password_policy.json` 
 - Secure flows use HMAC(salt+password) and enforce policy/history.
 - Vulnerable flows use raw SQL, no hashing, and stored XSS on add-customer to showcase risks.
 
+## File-by-file overview
+
+See `docs/FILE_OVERVIEW.md` for a quick description of what each project file does so you can explain the demo structure during a presentation.
+
