@@ -98,38 +98,57 @@ def change_password_secure(request):
 
         if not user:
             message = "User not found."
-        elif user.reset_token and token and token != user.reset_token:
-            message = "Invalid reset token."
-        elif not verify_password(user.salt, old_password, user.password_hash):
-            message = "Old password incorrect."
         else:
-            ok, error = validate_password(new_password, policy)
-            if not ok:
-                message = error
-            else:
-                new_hash = hmac_hash_password(user.salt, new_password)
-                # enforce history limit
-                recent_hashes = list(
-                    user.password_history.order_by("-created_at")[: policy.get("password_history_limit", 3)]
-                    .values_list("password_hash", flat=True)
-                )
-                if new_hash in recent_hashes:
-                    message = "New password was used recently."
+           
+            is_valid_reset = False
+            if token:
+              
+                if user.reset_token and token == user.reset_token:
+                    is_valid_reset = True
                 else:
-                    user.password_hash = new_hash
-                    user.reset_token = None
-                    user.reset_created_at = None
-                    user.save(update_fields=["password_hash", "reset_token", "reset_created_at"])
-                    PasswordHistory.objects.create(user=user, password_hash=new_hash)
-                    # trim history
-                    keep = policy.get("password_history_limit", 3)
-                    extra_qs = user.password_history.order_by("-created_at")[keep:]
-                    if extra_qs.exists():
-                        user.password_history.filter(id__in=list(extra_qs.values_list("id", flat=True))).delete()
-                    message = "Password changed securely."
+                    message = "Invalid reset token."
+
+           
+            if not message and not is_valid_reset:
+                if not verify_password(user.salt, old_password, user.password_hash):
+                    message = "Old password incorrect."
+
+            
+            if not message:
+                ok, error = validate_password(new_password, policy)
+                if not ok:
+                    message = error
+                else:
+                    new_hash = hmac_hash_password(user.salt, new_password)
+                    
+                    recent_hashes = list(
+                        user.password_history.order_by("-created_at")[: policy.get("password_history_limit", 3)]
+                        .values_list("password_hash", flat=True)
+                    )
+                    if new_hash in recent_hashes:
+                        message = "New password was used recently."
+                    else:
+                       
+                        user.password_hash = new_hash
+                       
+                        user.reset_token = None
+                        user.reset_created_at = None
+                        user.save(update_fields=["password_hash", "reset_token", "reset_created_at"])
+                        
+                        PasswordHistory.objects.create(user=user, password_hash=new_hash)
+                        
+                        
+                        keep = policy.get("password_history_limit", 3)
+                        extra_qs = user.password_history.order_by("-created_at")[keep:]
+                        if extra_qs.exists():
+                            user.password_history.filter(id__in=list(extra_qs.values_list("id", flat=True))).delete()
+                        
+                        if is_valid_reset:
+                            message = "Password reset successfully (using token)."
+                        else:
+                            message = "Password changed securely."
 
     return render(request, "secure/change_password.html", {"message": message})
-
 
 def forgot_password_secure(request):
     message = ""
